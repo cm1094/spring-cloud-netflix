@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Configuration;
  * {@link ZuulServerAutoConfiguration}.
  *
  * @author Biju Kunjummen
+ * 配合@EnableZuulServer做为标记
+ * 使spring.factories文件中引入ZuulServerAutoConfiguration自动注入启用
  */
 
 @Configuration(proxyBeanMethods = false)

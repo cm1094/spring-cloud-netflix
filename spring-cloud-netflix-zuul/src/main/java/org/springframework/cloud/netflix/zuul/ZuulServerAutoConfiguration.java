@@ -16,26 +16,15 @@
 
 package org.springframework.cloud.netflix.zuul;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import com.netflix.zuul.FilterLoader;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.filters.FilterRegistry;
-import com.netflix.zuul.filters.ZuulServletFilter;
 import com.netflix.zuul.http.ZuulServlet;
 import com.netflix.zuul.monitoring.CounterFactory;
 import com.netflix.zuul.monitoring.TracerFactory;
 import io.micrometer.core.instrument.MeterRegistry;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -75,16 +64,24 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import static java.util.Collections.emptyList;
 
 /**
  * @author Spencer Gibb
  * @author Dave Syer
  * @author Biju Kunjummen
+ * 注入需要的bean
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({ ZuulProperties.class })
+//todo 这是在什么时候注入这2个类的，如果是该类下面部分，不应该是先解析ConditionalOnClass在解析类中的注入bean
 @ConditionalOnClass({ ZuulServlet.class, ZuulServletFilter.class })
+//使用@EnableZuulServer，其中配置ZuulServerMarkerConfiguration.Marker使当前类生效
 @ConditionalOnBean(ZuulServerMarkerConfiguration.Marker.class)
 // Make sure to get the ServerProperties from the same place as a normal web app would
 // FIXME @Import(ServerPropertiesAutoConfiguration.class)
@@ -104,12 +101,15 @@ public class ZuulServerAutoConfiguration {
 	@Autowired(required = false)
 	private List<WebMvcConfigurer> configurers = emptyList();
 
+	//todo
+	//使用actuator时显示的该类名称？
 	@Bean
 	public HasFeatures zuulFeature() {
 		return HasFeatures.namedFeature("Zuul (Simple)",
 				ZuulServerAutoConfiguration.class);
 	}
 
+	//
 	@Bean
 	@Primary
 	public CompositeRouteLocator primaryRouteLocator(
@@ -153,6 +153,8 @@ public class ZuulServerAutoConfiguration {
 	}
 
 	@Bean
+	//ConditionalOnMissingBean,它是修饰bean的一个注解,
+	//主要实现的是,当你的bean被注册之后,如果而注册相同类型的bean,就不会成功,它会保证你的bean只有一个
 	@ConditionalOnMissingBean(name = "zuulServlet")
 	@ConditionalOnProperty(name = "zuul.use-filter", havingValue = "false",
 			matchIfMissing = true)
