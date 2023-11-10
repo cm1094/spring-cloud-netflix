@@ -16,21 +16,10 @@
 
 package org.springframework.cloud.netflix.zuul.filters.pre;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletRequestWrapper;
-import javax.servlet.http.HttpServletRequest;
-
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.http.HttpServletRequestWrapper;
 import com.netflix.zuul.http.ServletInputStreamWrapper;
-
 import org.springframework.cloud.netflix.zuul.util.RequestContentDataExtractor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpOutputMessage;
@@ -43,6 +32,15 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.DispatcherServlet;
 
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletRequestWrapper;
+import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.FORM_BODY_WRAPPER_FILTER_ORDER;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
 
@@ -50,6 +48,16 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
  * Pre {@link ZuulFilter} that parses form data and reencodes it for downstream services.
  *
  * @author Dave Syer
+ * 包装"application/x-www-form-urlencoded"或"multipart/form-data"请求头内容
+ * request 流是不可重复读取的，在请求达到ZuulServlet之前，
+ * 也许Content-Type = application/x-www-form- urlencoding类型的请求，
+ * 其请求体已经被解析并将参数缓存了，因此转发的时候其请求体中的内容已经丢失，需要重新放回去。
+ * 放回去后又需要在后续zuul filter中能够重复读取使用。
+ * FormBodyWrapperFilter就是出于这个目标诞生的。
+ *
+ * 而当Content-Type = multipart/form-data时，目的也类似，
+ * 因为如果请求先达到DispatcherServlet，其中的数据也是要被解析处理的
+ * @link https://blog.csdn.net/XMEHB/article/details/103912354
  */
 public class FormBodyWrapperFilter extends ZuulFilter {
 
@@ -119,6 +127,8 @@ public class FormBodyWrapperFilter extends ZuulFilter {
 		RequestContext ctx = RequestContext.getCurrentContext();
 		HttpServletRequest request = ctx.getRequest();
 		FormBodyRequestWrapper wrapper = null;
+		//如果是zuul的HttpServletRequestWrapper，修改了原始request为包装FormBodyRequestWrapper
+		//否则包装request后放到了ctx中
 		if (request instanceof HttpServletRequestWrapper) {
 			HttpServletRequest wrapped = (HttpServletRequest) ReflectionUtils
 					.getField(this.requestField, request);
@@ -132,6 +142,7 @@ public class FormBodyWrapperFilter extends ZuulFilter {
 			wrapper = new FormBodyRequestWrapper(request);
 			ctx.setRequest(wrapper);
 		}
+		//标记是否包装，内容写回request
 		if (wrapper != null) {
 			ctx.getZuulRequestHeaders().put("content-type", wrapper.getContentType());
 		}
@@ -172,6 +183,7 @@ public class FormBodyWrapperFilter extends ZuulFilter {
 			return this.contentLength;
 		}
 
+		@Override
 		public long getContentLengthLong() {
 			return getContentLength();
 		}
@@ -184,6 +196,9 @@ public class FormBodyWrapperFilter extends ZuulFilter {
 			return new ServletInputStreamWrapper(this.contentData);
 		}
 
+		/**
+		 * 将内容写回到请求体中
+		 */
 		private synchronized void buildContentData() {
 			if (this.contentData != null) {
 				return;

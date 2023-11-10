@@ -16,18 +16,15 @@
 
 package org.springframework.cloud.netflix.zuul.filters.pre;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.http.HttpServletRequestWrapper;
 import com.netflix.zuul.http.ZuulServlet;
-
 import org.springframework.web.servlet.DispatcherServlet;
 
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.IS_DISPATCHER_SERVLET_REQUEST_KEY;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.SERVLET_DETECTION_FILTER_ORDER;
+import javax.servlet.http.HttpServletRequest;
+
+import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.*;
 
 /**
  * Detects whether a request is ran through the {@link DispatcherServlet} or
@@ -37,6 +34,13 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
  * reference.
  *
  * @author Adrian Ivan
+ * 看顺序是第一个执行，
+ * 判断是DispatcherServlet还是ZuulServlet
+ * 从DispatcherServlet 设置isDispatcherServletRequest 为true
+ * ZuulServlet设置isDispatcherServletRequest 为false
+ * 在Servlet30WrapperFilter、PreDecorationFilter有用到
+ * @link https://www.cnblogs.com/AWSL/p/10629876.html
+ *
  */
 public class ServletDetectionFilter extends ZuulFilter {
 

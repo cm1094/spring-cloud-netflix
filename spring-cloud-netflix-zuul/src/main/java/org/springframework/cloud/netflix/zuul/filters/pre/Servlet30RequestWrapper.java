@@ -16,12 +16,13 @@
 
 package org.springframework.cloud.netflix.zuul.filters.pre;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.netflix.zuul.http.HttpServletRequestWrapper;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * A Servlet 3.0 compliant wrapper.
+ * 包装了request，更多在子类FormBodyRequestWrapper中
  */
 class Servlet30RequestWrapper extends HttpServletRequestWrapper {
 

@@ -102,14 +102,20 @@ public class ZuulServerAutoConfiguration {
 	private List<WebMvcConfigurer> configurers = emptyList();
 
 	//todo
-	//使用actuator时显示的该类名称？
+	/**
+	 * 使用actuator时显示的该类名称？
+	 */
 	@Bean
 	public HasFeatures zuulFeature() {
 		return HasFeatures.namedFeature("Zuul (Simple)",
 				ZuulServerAutoConfiguration.class);
 	}
 
-	//
+	/**
+	 * 注册了组合刷新器，什么时候使用？
+	 * @param routeLocators
+	 * @return
+	 */
 	@Bean
 	@Primary
 	public CompositeRouteLocator primaryRouteLocator(
@@ -117,6 +123,10 @@ public class ZuulServerAutoConfiguration {
 		return new CompositeRouteLocator(routeLocators);
 	}
 
+	/**
+	 * 什么时候使用这个类
+	 * @return
+	 */
 	@Bean
 	@ConditionalOnMissingBean(SimpleRouteLocator.class)
 	public SimpleRouteLocator simpleRouteLocator() {
@@ -129,6 +139,12 @@ public class ZuulServerAutoConfiguration {
 		return new ZuulController();
 	}
 
+	/**
+	 * 在哪里配置使用
+	 * @param routes
+	 * @param zuulController
+	 * @return
+	 */
 	@Bean
 	public ZuulHandlerMapping zuulHandlerMapping(RouteLocator routes,
 			ZuulController zuulController) {
@@ -138,6 +154,10 @@ public class ZuulServerAutoConfiguration {
 		return mapping;
 	}
 
+	/**
+	 * 这个是做什么
+	 * @return
+	 */
 	protected final Map<String, CorsConfiguration> getCorsConfigurations() {
 		if (this.corsConfigurations == null) {
 			ZuulCorsRegistry registry = new ZuulCorsRegistry();
@@ -147,14 +167,24 @@ public class ZuulServerAutoConfiguration {
 		return this.corsConfigurations;
 	}
 
+	/**
+	 * 路由刷新监听器
+	 * 发送RoutesRefreshedEvent事件
+	 * @return
+	 */
 	@Bean
 	public ApplicationListener<ApplicationEvent> zuulRefreshRoutesListener() {
 		return new ZuulRefreshListener();
 	}
 
+	/**
+	 *  ConditionalOnMissingBean,它是修饰bean的一个注解,
+	 * 主要实现的是,当你的bean被注册之后,如果而注册相同类型的bean,就不会成功,它会保证你的bean只有一个
+	 *
+	 * 应该是只有一个ZuulServlet？
+	 * @return
+	 */
 	@Bean
-	//ConditionalOnMissingBean,它是修饰bean的一个注解,
-	//主要实现的是,当你的bean被注册之后,如果而注册相同类型的bean,就不会成功,它会保证你的bean只有一个
 	@ConditionalOnMissingBean(name = "zuulServlet")
 	@ConditionalOnProperty(name = "zuul.use-filter", havingValue = "false",
 			matchIfMissing = true)
@@ -167,6 +197,12 @@ public class ZuulServerAutoConfiguration {
 		return servlet;
 	}
 
+	/**
+	 * 使用filter方式
+	 * 与servelet方式的区别是什么？
+	 * 只做过滤功能，不做接口地址处理？
+	 * @return
+	 */
 	@Bean
 	@ConditionalOnMissingBean(name = "zuulServletFilter")
 	@ConditionalOnProperty(name = "zuul.use-filter", havingValue = "true",

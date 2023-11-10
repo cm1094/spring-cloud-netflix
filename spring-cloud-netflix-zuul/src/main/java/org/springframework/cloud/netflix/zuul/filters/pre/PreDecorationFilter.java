@@ -16,19 +16,10 @@
 
 package org.springframework.cloud.netflix.zuul.filters.pre;
 
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.cloud.netflix.zuul.filters.ProxyRequestHelper;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
@@ -40,25 +31,14 @@ import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UrlPathHelper;
 
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.FORWARD_LOCATION_PREFIX;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.FORWARD_TO_KEY;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.HTTPS_PORT;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.HTTPS_SCHEME;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.HTTP_PORT;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.HTTP_SCHEME;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_DECORATION_FILTER_ORDER;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PROXY_KEY;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.REQUEST_URI_KEY;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.RETRYABLE_KEY;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.SERVICE_HEADER;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.SERVICE_ID_HEADER;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.SERVICE_ID_KEY;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.X_FORWARDED_FOR_HEADER;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.X_FORWARDED_HOST_HEADER;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.X_FORWARDED_PORT_HEADER;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.X_FORWARDED_PREFIX_HEADER;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.X_FORWARDED_PROTO_HEADER;
+import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.regex.Pattern;
+
+import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.*;
 
 /**
  * Pre {@link ZuulFilter} that determines where and how to route based on the supplied
@@ -71,6 +51,8 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
  * @author Adrian Ivan
  * @author Jacques-Etienne Beaudet
  * @author Durigon Durigon
+ * 根据url定位路由
+ *
  */
 public class PreDecorationFilter extends ZuulFilter {
 
@@ -120,6 +102,7 @@ public class PreDecorationFilter extends ZuulFilter {
 
 	@Override
 	public boolean shouldFilter() {
+		//如果之前已有路由转发说明已经定位了路由，不再定位
 		RequestContext ctx = RequestContext.getCurrentContext();
 		return !ctx.containsKey(FORWARD_TO_KEY) // a filter has already forwarded
 				&& !ctx.containsKey(SERVICE_ID_KEY); // a filter has already determined
@@ -131,6 +114,7 @@ public class PreDecorationFilter extends ZuulFilter {
 		RequestContext ctx = RequestContext.getCurrentContext();
 		final String requestURI = this.urlPathHelper
 				.getPathWithinApplication(ctx.getRequest());
+		//校验是否有..等特殊字符
 		if (insecurePath(requestURI)) {
 			throw new InsecureRequestPathException(requestURI);
 		}
@@ -140,11 +124,14 @@ public class PreDecorationFilter extends ZuulFilter {
 			if (location != null) {
 				ctx.put(REQUEST_URI_KEY, route.getPath());
 				ctx.put(PROXY_KEY, route.getId());
+
+				//过滤全局的自定义敏感header
 				if (!route.isCustomSensitiveHeaders()) {
 					this.proxyRequestHelper.addIgnoredHeaders(
 							this.properties.getSensitiveHeaders().toArray(new String[0]));
 				}
 				else {
+					//过滤route自定义敏感header
 					this.proxyRequestHelper.addIgnoredHeaders(
 							route.getSensitiveHeaders().toArray(new String[0]));
 				}
@@ -153,6 +140,7 @@ public class PreDecorationFilter extends ZuulFilter {
 					ctx.put(RETRYABLE_KEY, route.getRetryable());
 				}
 
+				//转到http、forward.to、微服务id
 				if (location.startsWith(HTTP_SCHEME + ":")
 						|| location.startsWith(HTTPS_SCHEME + ":")) {
 					ctx.setRouteHost(getUrl(location));
@@ -172,6 +160,9 @@ public class PreDecorationFilter extends ZuulFilter {
 					ctx.setRouteHost(null);
 					ctx.addOriginResponseHeader(SERVICE_ID_HEADER, location);
 				}
+
+				//请求头中添加原始请求信息
+				//默认开启
 				if (this.properties.isAddProxyHeaders()) {
 					addProxyHeaders(ctx, route);
 					String xforwardedfor = ctx.getRequest()

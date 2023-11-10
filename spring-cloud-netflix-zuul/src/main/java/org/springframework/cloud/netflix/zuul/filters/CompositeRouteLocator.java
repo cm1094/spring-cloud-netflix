@@ -16,17 +16,18 @@
 
 package org.springframework.cloud.netflix.zuul.filters;
 
+import org.springframework.core.annotation.AnnotationAwareOrderComparator;
+import org.springframework.util.Assert;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import org.springframework.core.annotation.AnnotationAwareOrderComparator;
-import org.springframework.util.Assert;
 
 /**
  * RouteLocator that composes multiple RouteLocators.
  *
  * @author Johannes Edmeier
+ * 多个组合刷新器
  *
  */
 public class CompositeRouteLocator implements RefreshableRouteLocator {

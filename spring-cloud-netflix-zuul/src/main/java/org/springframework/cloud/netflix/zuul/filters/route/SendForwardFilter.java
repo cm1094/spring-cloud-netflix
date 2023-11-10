@@ -16,16 +16,13 @@
 
 package org.springframework.cloud.netflix.zuul.filters.route;
 
-import javax.servlet.RequestDispatcher;
-
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
-
 import org.springframework.util.ReflectionUtils;
 
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.FORWARD_TO_KEY;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.ROUTE_TYPE;
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.SEND_FORWARD_FILTER_ORDER;
+import javax.servlet.RequestDispatcher;
+
+import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.*;
 
 /**
  * Route {@link ZuulFilter} that forwards requests using the {@link RequestDispatcher}.
@@ -34,6 +31,8 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
  * Useful for forwarding to endpoints in the current application.
  *
  * @author Dave Syer
+ * 使用ApplicationDispatcher来转发请求
+ *
  */
 public class SendForwardFilter extends ZuulFilter {
 
@@ -52,6 +51,7 @@ public class SendForwardFilter extends ZuulFilter {
 	@Override
 	public boolean shouldFilter() {
 		RequestContext ctx = RequestContext.getCurrentContext();
+		//参数中有forward.to并且无sendForwardFilter.ran
 		return ctx.containsKey(FORWARD_TO_KEY)
 				&& !ctx.getBoolean(SEND_FORWARD_FILTER_RAN, false);
 	}

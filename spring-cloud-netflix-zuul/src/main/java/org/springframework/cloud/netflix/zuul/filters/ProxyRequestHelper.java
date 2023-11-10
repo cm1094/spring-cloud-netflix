@@ -16,36 +16,21 @@
 
 package org.springframework.cloud.netflix.zuul.filters;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.util.HTTPRequestUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.cloud.netflix.zuul.util.RequestUtils;
-import org.springframework.http.HttpHeaders;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriTemplate;
 import org.springframework.web.util.UriUtils;
 import org.springframework.web.util.WebUtils;
 
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.REQUEST_URI_KEY;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author Dave Syer
@@ -72,16 +57,34 @@ public class ProxyRequestHelper {
 	 */
 	public static final Pattern COLON_PATTERN = Pattern.compile(":");
 
+	/**
+	 * 需要被忽略的请求头
+	 */
 	private Set<String> ignoredHeaders = new LinkedHashSet<>();
 
+	/**
+	 * 这里的应该没用到，用的是route中的
+	 */
 	private Set<String> sensitiveHeaders = new LinkedHashSet<>();
 
+	/**
+	 * 这个也没看到使用
+	 */
 	private Set<String> whitelistHosts = new LinkedHashSet<>();
 
 	private boolean traceRequestBody = true;
 
+	/**
+	 * 是否添加host到转发请求中
+	 * //todo 未开启还是发送了
+	 */
 	private boolean addHostHeader = false;
 
+	/**
+	 * 是否url encode
+	 * 起名错了？
+	 *
+	 */
 	private boolean urlDecoded = true;
 
 	@Deprecated

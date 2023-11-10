@@ -16,17 +16,15 @@
 
 package org.springframework.cloud.netflix.zuul.filters.pre;
 
-import java.lang.reflect.Field;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.http.HttpServletRequestWrapper;
-
 import org.springframework.cloud.netflix.zuul.util.RequestUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Field;
 
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.SERVLET_30_WRAPPER_FILTER_ORDER;
@@ -36,6 +34,9 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
  * default wrapper is only Servlet 2.5 compliant.
  *
  * @author Spencer Gibb
+ * 第二个执行，将servlet2.5包装为3.0，zuul只支持2.5
+ * 所有的都包装为3.0
+ * 下面的todo写了只包装3.0
  */
 public class Servlet30WrapperFilter extends ZuulFilter {
 
@@ -72,6 +73,8 @@ public class Servlet30WrapperFilter extends ZuulFilter {
 	public Object run() {
 		RequestContext ctx = RequestContext.getCurrentContext();
 		HttpServletRequest request = ctx.getRequest();
+		//判断请求是否是HttpServletRequestWrapper类型的；原始的请求一般不是它的子类
+		//只有配置buffer-requests为true才会是，默认是false
 		if (request instanceof HttpServletRequestWrapper) {
 			request = (HttpServletRequest) ReflectionUtils.getField(this.requestField,
 					request);
